@@ -21,7 +21,13 @@ from collectors.researcher import research_company
 
 load_dotenv()
 
-ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+def _get_api_key() -> str:
+    """Get Anthropic API key from Streamlit secrets or .env file."""
+    try:
+        import streamlit as st
+        return st.secrets.get("ANTHROPIC_API_KEY", os.getenv("ANTHROPIC_API_KEY", ""))
+    except Exception:
+        return os.getenv("ANTHROPIC_API_KEY", "")
 MEMOS_DIR = Path("memos")
 MEMOS_DIR.mkdir(exist_ok=True)
 
@@ -33,8 +39,8 @@ def generate_memo(company_name: str, website: str = None) -> str:
     Full pipeline: research company → build prompt → call Claude → save memo.
     Returns the memo text.
     """
-    if not ANTHROPIC_API_KEY:
-        print("ERROR: ANTHROPIC_API_KEY not set in .env file")
+    if not _get_api_key():
+        print("ERROR: ANTHROPIC_API_KEY not set in .env file or Streamlit secrets")
         return ""
 
     # Step 1: Research
@@ -205,7 +211,7 @@ def _call_claude(prompt: str) -> str:
         resp = requests.post(
             "https://api.anthropic.com/v1/messages",
             headers={
-                "x-api-key":         ANTHROPIC_API_KEY,
+                "x-api-key":         _get_api_key(),
                 "anthropic-version": "2023-06-01",
                 "content-type":      "application/json",
             },

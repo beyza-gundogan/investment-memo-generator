@@ -19,7 +19,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-NEWS_API_KEY = os.getenv("NEWS_API_KEY")
+def _get_news_api_key() -> str:
+    try:
+        import streamlit as st
+        return st.secrets.get("NEWS_API_KEY", os.getenv("NEWS_API_KEY", ""))
+    except Exception:
+        return os.getenv("NEWS_API_KEY", "")
+
+NEWS_API_KEY = _get_news_api_key()
 
 FUNDING_KEYWORDS   = ["raises", "funding", "series", "investment", "backed",
                        "valuation", "round", "capital", "investors"]
@@ -120,7 +127,7 @@ def _fetch_google_news(company_name: str) -> list[dict]:
             headers={"User-Agent": "Mozilla/5.0"}
         )
         if resp.status_code != 200:
-            return []
+            return _fetch_bing_news(company_name)
 
         root     = ET.fromstring(resp.content)
         articles = []
@@ -135,6 +142,36 @@ def _fetch_google_news(company_name: str) -> list[dict]:
                 "url":       item.findtext("link") or "",
                 "published": item.findtext("pubDate") or "",
                 "summary":   "",
+            })
+        # If Google News returned nothing, try Bing
+        return articles if articles else _fetch_bing_news(company_name)
+    except Exception:
+        return _fetch_bing_news(company_name)
+
+
+def _fetch_bing_news(company_name: str) -> list[dict]:
+    """Bing News RSS — free fallback, no key needed."""
+    try:
+        query = requests.utils.quote(f'"{company_name}"')
+        url   = f"https://www.bing.com/news/search?q={query}&format=rss"
+        resp  = requests.get(
+            url, timeout=8,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        if resp.status_code != 200:
+            return []
+        root     = ET.fromstring(resp.content)
+        articles = []
+        for item in root.findall(".//item")[:20]:
+            title = item.findtext("title") or ""
+            if not title:
+                continue
+            articles.append({
+                "title":     title,
+                "source":    item.findtext("source") or "Bing News",
+                "url":       item.findtext("link") or "",
+                "published": item.findtext("pubDate") or "",
+                "summary":   item.findtext("description") or "",
             })
         return articles
     except Exception:

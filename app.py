@@ -16,6 +16,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+def get_secret(key: str) -> str:
+    """Get a secret from Streamlit Cloud secrets or local .env file."""
+    try:
+        import streamlit as st
+        return st.secrets.get(key, os.getenv(key, ""))
+    except Exception:
+        return os.getenv(key, "")
+
 # ── Page config ───────────────────────────────────────────────────────────────
 
 st.set_page_config(
@@ -100,7 +108,7 @@ with st.sidebar:
         st.caption("No memos generated yet")
 
     st.divider()
-    api_key = os.getenv("ANTHROPIC_API_KEY")
+    api_key = get_secret("ANTHROPIC_API_KEY")
     if api_key:
         st.success("✓ Anthropic API connected")
     else:
