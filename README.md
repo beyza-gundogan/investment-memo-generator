@@ -1,6 +1,7 @@
 Investment Memo Generator
 
 An AI-powered tool that researches any company from public sources and generates a structured, analyst-quality investment memo in under 60 seconds — built to automate the first-pass analysis workflow used in venture capital, private equity, and strategy consulting.
+
 Demo
 
 https://beyza-gundogan-investment-memo-generator.streamlit.app/
